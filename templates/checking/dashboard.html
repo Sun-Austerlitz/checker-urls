@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+    <script>
+        check_url = function fetchdata(pk, url) {
+            if (pk !== null) {
+                $.ajax({
+                    url: '/checker',
+                    type: 'GET',
+                    data: {
+                        'pk': pk,
+                        'url': url
+                    },
+                    success: function (response) {
+                        if (response == 200) {
+                            $('#td-' + pk).removeClass("td-red");
+                            $('#td-' + pk).addClass("td-green");
+                        } else {
+                            $('#td-' + pk).removeClass("td-green");
+                            $('#td-' + pk).addClass("td-red");
+                        }
+                        $.ajax({
+                            url: '/get_last_update',
+                            type: 'GET',
+                            data: {
+                                'pk': pk,
+                            },
+                            success: function (response) {
+                                $('#td-last_check-' + pk).text(response)
+                            },
+                        });
+                    }
+                });
+            }
+
+
+        }
+    </script>
+
+
+    <table>
+        <thead>
+        <tr id="content-tr">
+            <th>URL</th>
+            <th>Status code</th>
+            <th>Last check</th>
+            <th>Interval(min)</th>
+            <th>Pause</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for url in urls %}
+            <tr>
+                <td>{{ url.url }}</td>
+                <td
+                        {% if url.status_code == 200 %} class="td-green"
+                        {% else %} class="td-red"
+                        {% endif %} id="td-{{ url.id }}">
+
+                </td>
+                <td id="td-last_check-{{ url.id }}">{{ url.updated }}</td>
+                <td class="td-interval" ></td>
+                <td>{{ url.pause }}</td>
+            </tr>
+            {% if url.pause == 'no' %}
+                <script>check_url(pk={{ url.id }}, url="{{ url.url }}")
+                    $(document).ready(function(){
+                        setInterval(check_url,{{ url.interval }}*60000, {{ url.id }}, "{{ url.url }}");
+                    });
+                </script>
+            {% endif %}
+        {% endfor %}
+        </tbody>
+    </table>
+
+{% include "checking/pagination.html" with page=urls %}
+
+
+{% endblock %}
